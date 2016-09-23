@@ -1,0 +1,6 @@
+package: github.com/olivere/docker-test-web
+import:
+- package: github.com/go-kit/kit
+  version: ^0.2.0
+  subpackages:
+  - log
