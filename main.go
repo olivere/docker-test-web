@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -19,7 +20,7 @@ var (
 	BuildTime string
 	BuildTag  string
 
-	addr = flag.String("addr", fromEnv("ADDR", ":10000"), "HTTP bind address")
+	addr = flag.String("addr", fromEnv(":10000", "NOMAD_ADDR_http"), "HTTP bind address")
 
 	logger log.Logger
 )
@@ -53,6 +54,12 @@ func main() {
 		"buildTime", BuildTime,
 		"buildTag", BuildTag,
 	)
+	var keyvals []interface{}
+	for _, s := range os.Environ() {
+		pair := strings.SplitN(s, "=", 2)
+		keyvals = append(keyvals, pair[0], pair[1])
+	}
+	logger.Log(keyvals...)
 	defer logger.Log("msg", "Stopped")
 
 	errc := make(chan error, 1)
@@ -95,9 +102,11 @@ func Index(w http.ResponseWriter, r *http.Request) {
 `, Version, BuildTime, BuildTag)
 }
 
-func fromEnv(name, defvalue string) string {
-	if s := os.Getenv(name); s != "" {
-		return s
+func fromEnv(defaultValue string, envNames ...string) string {
+	for _, name := range envNames {
+		if s := os.Getenv(name); s != "" {
+			return s
+		}
 	}
-	return defvalue
+	return defaultValue
 }
